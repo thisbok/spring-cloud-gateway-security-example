@@ -350,3 +350,7 @@ nginx/*.pem
 *.secret
 config.json
 secrets.json
+
+
+.DS_Store
+**/.DS_Store
