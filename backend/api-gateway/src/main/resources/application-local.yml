@@ -1,0 +1,88 @@
+# Local Development Environment Configuration
+# 로컬 개발 환경 - 개발 편의성 우선
+
+# External Infrastructure (Local)
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  elasticsearch:
+    uris: http://localhost:9200
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: api-gateway-local
+    # Local 에서는 보안 설정 없음
+
+# External Services (Local)
+services:
+  api-key-service:
+    url: http://localhost:18081
+
+# Management & Monitoring (Local)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway,traces
+  endpoint:
+    health:
+      show-details: always
+
+# Local Development Overrides
+security:
+  layers:
+    authentication:
+      api-key:
+        require-signature: true  # 로컬 개발 편의성
+        # Idempotency Key 설정
+        idempotency:
+          enabled: ${IDEMPOTENCY_ENABLED:false}
+          ttl-hours: ${IDEMPOTENCY_TTL_HOURS:24}
+        timestamp-tolerance-seconds: 3600  # 1 시간 허용 (개발 편의성)
+        validation-strategy: CACHE_FIRST
+        cache:
+          warmup-on-startup: false  # 로컬에서는 빠른 시작
+        security:
+          require-secret: false
+          ip-whitelist-enabled: true  # 로컬 개발에서 비활성화
+          max-failed-attempts: 100  # 로컬에서 여유롭게
+          block-duration-minutes: 1
+    monitoring:
+      audit-logging:
+        use-kafka: false  # 로컬에서는 파일 로깅 사용
+
+
+# Logging (Local) - 상세 디버그
+logging:
+  level:
+    root: INFO
+    com.exec: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive: DEBUG
+    org.springframework.data.redis: DEBUG
+    io.github.resilience4j: DEBUG
+    reactor.netty: INFO
+    io.netty: INFO
+  # Request/Response 로깅 설정 (로컬 환경)
+  request-response:
+    enabled: true
+    max-body-size: 20480  # 로컬에서는 더 큰 바디 허용 (20KB)
+    max-header-value-length: 1000
+    channels:
+      mysql: false  # 로컬에서는 DB 저장 비활성화
+      elasticsearch: false  # 로컬에서는 ES 저장 비활성화
+      kafka: false  # 로컬에서는 Kafka 비활성화
+      file-backup: true  # 로컬에서는 파일 백업 활성화
+    security:
+      mask-sensitive-data: false  # 로컬에서는 마스킹 비활성화 (디버깅 편의)

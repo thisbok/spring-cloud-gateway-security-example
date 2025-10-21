@@ -1,0 +1,103 @@
+# Local Development Configuration
+# Database Configuration (Read/Write Split)
+database:
+  write:
+    url: jdbc:mysql://localhost:3306/pg_sandbox?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    username: ${DB_WRITE_USERNAME:root}
+    password: ${DB_WRITE_PASSWORD:mysql_root123!@}
+    hikari:
+      maximum-pool-size: 8
+      minimum-idle: 2
+      connection-timeout: 30000
+      validation-timeout: 5000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  read:
+    url: jdbc:mysql://localhost:3306/pg_sandbox?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    username: ${DB_READ_USERNAME:root}
+    password: ${DB_READ_PASSWORD:mysql_root123!@}
+    hikari:
+      maximum-pool-size: 6
+      minimum-idle: 1
+      connection-timeout: 30000
+      validation-timeout: 5000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+spring:
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: false
+        dialect: org.hibernate.dialect.MySQLDialect
+    show-sql: false
+
+  # Redis Configuration (Analytics 전용)
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      database: 2 # Analytics 전용 DB
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 2
+
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: analytics-service-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 500
+      properties:
+        spring.json.trusted.packages: com.exec.common.dto
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.exec.common.dto.ApiGatewayRequestLogDto
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+
+  # Elasticsearch Configuration
+  elasticsearch:
+    uris: http://localhost:9200
+    username: ${ELASTICSEARCH_USERNAME:elastic}
+    password: ${ELASTICSEARCH_PASSWORD:changeme}
+    connection-timeout: 5s
+    socket-timeout: 30s
+
+# Analytics Service Configuration
+analytics:
+  sliding-window:
+    duration-minutes: 5
+    bucket-count: 5
+  thresholds:
+    error-rate-percent: 5.0
+    high-response-time-ms: 3000
+    suspicious-request-count: 100
+  batch:
+    size: 100
+    interval-seconds: 30
+
+# Logging Configuration
+logging:
+  level:
+    com.exec.services.analytics: DEBUG
+    com.exec.core: DEBUG
+    com.exec.common: DEBUG
+    org.springframework.data.redis: WARN
+    org.springframework.kafka: INFO
+    org.springframework.data.elasticsearch: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.web: INFO

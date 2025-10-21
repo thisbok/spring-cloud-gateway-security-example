@@ -179,7 +179,6 @@ backend/**/mvnw
 backend/**/mvnw.cmd
 
 # Spring Boot
-backend/**/application-*.yml
 backend/**/application-*.properties
 backend/**/.env
 backend/**/*.log

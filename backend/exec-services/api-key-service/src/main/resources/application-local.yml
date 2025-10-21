@@ -1,0 +1,66 @@
+# Local Development Configuration
+# Database Configuration (Read/Write Split)
+database:
+  write:
+    url: jdbc:mysql://localhost:3306/pg_sandbox?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    username: ${DB_WRITE_USERNAME:root}
+    password: ${DB_WRITE_PASSWORD:mysql_root123!@}
+    hikari:
+      maximum-pool-size: 8
+      minimum-idle: 2
+      connection-timeout: 30000
+      validation-timeout: 5000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  read:
+    url: jdbc:mysql://localhost:3306/pg_sandbox?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    username: ${DB_READ_USERNAME:root}
+    password: ${DB_READ_PASSWORD:mysql_root123!@}
+    hikari:
+      maximum-pool-size: 6
+      minimum-idle: 1
+      connection-timeout: 30000
+      validation-timeout: 5000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+spring:
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: false
+        dialect: org.hibernate.dialect.MySQLDialect
+    show-sql: false
+
+# Logging Configuration
+logging:
+  level:
+    com.exec.services.apikey: DEBUG
+    com.exec.core: DEBUG
+    com.exec.common: DEBUG
+    org.springframework.data.redis: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.web: DEBUG
+    # Tracing 디버그 로그
+    io.micrometer.tracing: DEBUG
+    io.micrometer.observation: DEBUG
+    brave: DEBUG
+
+# Tracing Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,traces
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+    propagation:
+      type: b3,w3c
