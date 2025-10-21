@@ -1,0 +1,386 @@
+{
+	"info": {
+		"_postman_id": "c028ebed-1167-456a-96b8-d63edf22caf0",
+		"name": "PG API Gateway Test Collection",
+		"description": "PG API Gateway 인증 및 API 테스트를 위한 Postman Collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "26645809"
+	},
+	"item": [
+		{
+			"name": "1. Signature Generation (테스트용)",
+			"item": [
+				{
+					"name": "Generate Signature - Manual Keys 키생성",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has signature\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('signature');",
+									"    pm.expect(jsonData.data).to.have.property('authorizationHeader');",
+									"    ",
+									"    // 환경 변수에 저장",
+									"    pm.environment.set(\"generated_signature\", jsonData.data.signature);",
+									"    pm.environment.set(\"authorization_header\", jsonData.data.authorizationHeader);",
+									"    pm.environment.set(\"test_timestamp\", jsonData.data.timestamp);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"accessKey\": \"{{access_key}}\",\n    \"secretKey\": \"{{secret_key}}\",\n    \"method\": \"POST\",\n    \"uri\": \"/api/v1/api-keys\",\n    \"requestBody\": {\n        \"clientId\": \"test-client-19\",\n        \"description\": \"Test API Key for Postman\",\n        \"rateLimitTier\": \"BASIC\"\n    },\n    \"contentType\": \"application/json\",\n    \"idempotencyKey\": \"{{$guid}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_key_service_url}}/api/v1/test/signature/generate",
+							"host": [
+								"{{api_key_service_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"test",
+								"signature",
+								"generate"
+							]
+						},
+						"description": "수동으로 Access Key 와 Secret Key 를 입력하여 Signature 를 생성합니다."
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Signature - Manual Keys \b키 목록",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has signature\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('signature');",
+									"    pm.expect(jsonData.data).to.have.property('authorizationHeader');",
+									"    ",
+									"    // 환경 변수에 저장",
+									"    pm.environment.set(\"generated_signature\", jsonData.data.signature);",
+									"    pm.environment.set(\"authorization_header\", jsonData.data.authorizationHeader);",
+									"    pm.environment.set(\"test_timestamp\", jsonData.data.timestamp);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"accessKey\": \"{{access_key}}\",\n    \"secretKey\": \"{{secret_key}}\",\n    \"method\": \"GET\",\n    \"uri\": \"/api/v1/api-keys?page=0&size=20\",\n    \"requestBody\": \"\",\n    \"contentType\": \"application/json\",\n    \"idempotencyKey\": \"{{$guid}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_key_service_url}}/api/v1/test/signature/generate",
+							"host": [
+								"{{api_key_service_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"test",
+								"signature",
+								"generate"
+							]
+						},
+						"description": "수동으로 Access Key 와 Secret Key 를 입력하여 Signature 를 생성합니다."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. API Key Management",
+			"item": [
+				{
+					"name": "Create API Key",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"API Key created\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('accessKey');",
+									"    pm.expect(jsonData.data).to.have.property('secretKey');",
+									"    ",
+									"    // 환경 변수에 저장",
+									"    pm.environment.set(\"created_access_key\", jsonData.data.accessKey);",
+									"    pm.environment.set(\"created_secret_key\", jsonData.data.secretKey);",
+									"    pm.environment.set(\"created_api_key_id\", jsonData.data.id);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"clientId\": \"test-client-19\",\n    \"description\": \"Test API Key for Postman\",\n    \"rateLimitTier\": \"BASIC\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_key_service_url}}/api/v1/api-keys",
+							"host": [
+								"{{api_key_service_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"api-keys"
+							]
+						},
+						"description": "새로운 API Key 를 생성합니다."
+					},
+					"response": []
+				},
+				{
+					"name": "Get API Key by Access Key",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{api_key_service_url}}/api/v1/api-keys/access/{{created_access_key}}",
+							"host": [
+								"{{api_key_service_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"api-keys",
+								"access",
+								"{{created_access_key}}"
+							]
+						},
+						"description": "Access Key 로 API Key 정보를 조회합니다."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All API Keys",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{api_key_service_url}}/api/v1/api-keys?page=0&size=20",
+							"host": [
+								"{{api_key_service_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"api-keys"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "모든 API Key 목록을 조회합니다."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Gateway API Tests (인증 테스트)",
+			"item": [
+				{
+					"name": "Test Gateway - 키 목록",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization_header}}",
+								"description": "Old timestamp",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/api-keys?page=0&size=20",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"api-keys"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "만료된 타임스탬프로 인증 실패를 테스트합니다."
+					},
+					"response": []
+				},
+				{
+					"name": "Test Gateway - 키 생성",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization_header}}",
+								"description": "Old timestamp",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/api-keys",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"api-keys"
+							]
+						},
+						"description": "만료된 타임스탬프로 인증 실패를 테스트합니다."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "gateway_url",
+			"value": "http://localhost:18080",
+			"type": "string"
+		},
+		{
+			"key": "api_key_service_url",
+			"value": "http://localhost:18081",
+			"type": "string"
+		},
+		{
+			"key": "access_key",
+			"value": "test_access_key",
+			"type": "string"
+		},
+		{
+			"key": "secret_key",
+			"value": "test_secret_key",
+			"type": "string"
+		},
+		{
+			"key": "stored_access_key",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
