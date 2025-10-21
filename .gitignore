@@ -327,16 +327,6 @@ frontend/**/Thumbs.db
 docker-compose.override.yml
 .docker/
 **/.dockerignore
-
-# ========================================
-# Database & Persistence
-# ========================================
-**/data/
-**/mysql/
-**/postgres/
-**/redis/
-**/elasticsearch/
-
 # ========================================
 # Monitoring & Logging
 # ========================================

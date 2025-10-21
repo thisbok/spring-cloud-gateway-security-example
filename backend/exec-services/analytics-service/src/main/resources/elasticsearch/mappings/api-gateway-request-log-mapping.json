@@ -1,0 +1,204 @@
+{
+  "index_patterns": [
+    "api-gateway-logs-*"
+  ],
+  "template": {
+    "settings": {
+      "number_of_shards": 5,
+      "number_of_replicas": 1,
+      "index": {
+        "refresh_interval": "5s",
+        "max_result_window": 10000
+      },
+      "analysis": {
+        "analyzer": {
+          "uri_analyzer": {
+            "type": "custom",
+            "tokenizer": "keyword",
+            "filter": [
+              "lowercase"
+            ]
+          }
+        }
+      }
+    },
+    "mappings": {
+      "dynamic": "true",
+      "dynamic_templates": [
+        {
+          "request_headers": {
+            "path_match": "requestHeaders.*",
+            "mapping": {
+              "type": "keyword",
+              "ignore_above": 512
+            }
+          }
+        },
+        {
+          "response_headers": {
+            "path_match": "responseHeaders.*",
+            "mapping": {
+              "type": "keyword",
+              "ignore_above": 512
+            }
+          }
+        }
+      ],
+      "properties": {
+        "requestId": {
+          "type": "keyword"
+        },
+        "clientId": {
+          "type": "keyword"
+        },
+        "apiKeyId": {
+          "type": "long"
+        },
+        "accessKey": {
+          "type": "keyword"
+        },
+        "timestamp": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "date": {
+          "type": "keyword"
+        },
+        "method": {
+          "type": "keyword"
+        },
+        "uri": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 512
+            }
+          },
+          "analyzer": "uri_analyzer"
+        },
+        "queryString": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        },
+        "requestHeaders": {
+          "type": "object",
+          "enabled": true,
+          "dynamic": true
+        },
+        "requestBody": {
+          "type": "object",
+          "enabled": false
+        },
+        "clientIp": {
+          "type": "ip"
+        },
+        "statusCode": {
+          "type": "integer"
+        },
+        "responseHeaders": {
+          "type": "object",
+          "enabled": true,
+          "dynamic": true
+        },
+        "responseBody": {
+          "type": "object",
+          "enabled": false
+        },
+        "responseTimeMs": {
+          "type": "long"
+        },
+        "requestSize": {
+          "type": "long"
+        },
+        "responseSize": {
+          "type": "long"
+        },
+        "userAgent": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 512
+            }
+          }
+        },
+        "contentType": {
+          "type": "keyword"
+        },
+        "startTimeMs": {
+          "type": "long"
+        },
+        "endTimeMs": {
+          "type": "long"
+        },
+        "upstreamResponseTimeMs": {
+          "type": "long"
+        },
+        "errorMessage": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "signalType": {
+          "type": "keyword"
+        },
+        "securityRiskLevel": {
+          "type": "keyword"
+        },
+        "attackType": {
+          "type": "keyword"
+        },
+        "geoLocation": {
+          "type": "keyword"
+        },
+        "apiCategory": {
+          "type": "keyword"
+        },
+        "apiVersion": {
+          "type": "keyword"
+        },
+        "sessionId": {
+          "type": "keyword"
+        },
+        "userId": {
+          "type": "keyword"
+        },
+        "algorithm": {
+          "type": "keyword"
+        },
+        "signature": {
+          "type": "keyword",
+          "index": false
+        },
+        "signedDate": {
+          "type": "keyword"
+        },
+        "idempotencyKey": {
+          "type": "keyword"
+        },
+        "isSuccess": {
+          "type": "boolean"
+        },
+        "hasError": {
+          "type": "boolean"
+        },
+        "endpoint": {
+          "type": "keyword"
+        },
+        "totalDataSize": {
+          "type": "long"
+        }
+      }
+    }
+  }
+}
