@@ -1,0 +1,113 @@
+buildscript {
+    ext {
+        springBootVersion = '3.4.2'
+        springCloudVersion = '2024.0.0'
+        dependencyManagementVersion = '1.1.7'
+    }
+}
+
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version "$springBootVersion" apply false
+    id 'io.spring.dependency-management' version "$dependencyManagementVersion" apply false
+}
+
+allprojects {
+    group = 'com.exec'
+    version = '1.0.0'
+
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+
+    dependencies {
+        implementation platform("org.springframework.boot:spring-boot-dependencies:$springBootVersion")
+
+        // Lombok (최신 버전)
+        compileOnly 'org.projectlombok:lombok:1.18.36'
+        annotationProcessor 'org.projectlombok:lombok:1.18.36'
+
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:$springCloudVersion"
+        }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+    }
+}
+
+// Gateway 프로젝트들 (Spring Cloud Gateway)
+configure(subprojects.findAll { it.name.endsWith('-gateway') }) {
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    dependencies {
+        // Gateway 는 core 모듈 의존하지 않음 (독립적 운영)
+        implementation project(':module-common')
+    }
+}
+
+// Service 프로젝트들 (exec-services 하위)
+configure(subprojects.findAll { it.path.startsWith(':exec-services:') }) {
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    dependencies {
+        // module-core 만 의존 (transitive 로 module-common 포함됨)
+        implementation project(':module-core')
+    }
+}
+
+// Module 프로젝트들에는 Spring Boot 플러그인을 적용하지 않음
+configure(subprojects.findAll { it.name.startsWith('module-') }) {
+    apply plugin: 'java-library'
+
+    // 실행 가능한 jar 생성 비활성화
+    jar {
+        enabled = true
+        archiveClassifier = ''
+    }
+}
+
+// exec-services 컨테이너 프로젝트 설정
+configure(subprojects.findAll { it.name == 'exec-services' }) {
+    // exec-services 는 컨테이너 프로젝트이므로 java 플러그인만 적용
+    apply plugin: 'java'
+
+    // 실행 가능한 jar 를 생성하지 않음
+    jar {
+        enabled = false
+    }
+
+    // bootJar 태스크도 비활성화
+    if (project.tasks.findByName('bootJar')) {
+        bootJar {
+            enabled = false
+        }
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+wrapper {
+    gradleVersion = '8.11.1'
+}

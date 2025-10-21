@@ -1,0 +1,214 @@
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+  cloud:
+    gateway:
+      # GlobalFilter 는 자동으로 모든 route 에 적용됨
+      globalfilter:
+      # RequestBodyCacheFilter: HIGHEST_PRECEDENCE - 1
+      # IntegratedLoggingFilter: HIGHEST_PRECEDENCE
+      # UnifiedErrorHandlingFilter: HIGHEST_PRECEDENCE + 2
+      routes:
+        # API Key Service Routes (With Auth)
+        - id: api-key-service
+          uri: ${API_KEY_SERVICE_URL:http://localhost:18081}
+          predicates:
+            - Path=/api/v1/api-keys/**
+          filters:
+            - name: ApiKeyAuthenticationFilter
+            - name: CircuitBreaker
+              args:
+                name: api-key-service-cb
+                fallbackUri: forward:/fallback/api-key-service
+
+        # API Key Service Routes (No Auth for Testing)
+        - id: api-key-service-no-auth
+          uri: ${API_KEY_SERVICE_URL:http://localhost:18081}
+          predicates:
+            - Path=/api/v1/api-keys-test/**
+          filters:
+            - name: RewritePath
+              args:
+                regexp: /api/v1/api-keys-test/(?<segment>.*)
+                replacement: /api/v1/api-keys/${segment}
+            - name: CircuitBreaker
+              args:
+                name: api-key-service-cb
+                fallbackUri: forward:/fallback/api-key-service
+
+        # Analytics Service Routes (Internal)
+        - id: analytics-service-internal
+          uri: ${ANALYTICS_SERVICE_URL:http://localhost:18082}
+          predicates:
+            - Path=/internal/api/v1/analytics/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: analytics-service-cb
+                fallbackUri: forward:/fallback/analytics-service
+
+      httpclient:
+        pool:
+          max-connections: ${GATEWAY_MAX_CONNECTIONS:500}
+          max-idle-time: ${GATEWAY_MAX_IDLE_TIME:30s}
+          max-life-time: ${GATEWAY_MAX_LIFE_TIME:60s}
+        connect-timeout: ${GATEWAY_CONNECT_TIMEOUT:5000}
+        response-timeout: ${GATEWAY_RESPONSE_TIMEOUT:30s}
+
+  # External Infrastructure
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: ${REDIS_TIMEOUT:2000ms}
+      lettuce:
+        pool:
+          max-active: ${REDIS_MAX_ACTIVE:20}
+          max-idle: ${REDIS_MAX_IDLE:10}
+          min-idle: ${REDIS_MIN_IDLE:2}
+
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URLS:http://localhost:9200}
+    username: ${ES_USERNAME:}
+    password: ${ES_PASSWORD:}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: ${KAFKA_PRODUCER_ACKS:all} # idempotent producer 를 위해 'all'로 설정
+      retries: ${KAFKA_PRODUCER_RETRIES:2147483647} # idempotent producer 를 위해 최대값
+      batch-size: ${KAFKA_PRODUCER_BATCH_SIZE:16384}
+      properties:
+        linger.ms: ${KAFKA_PRODUCER_LINGER_MS:10}
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5 # idempotent producer 에서는 5 이하여야 함
+        delivery.timeout.ms: ${KAFKA_DELIVERY_TIMEOUT:300000} # 5 분
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:api-gateway}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        spring.json.trusted.packages: "com.exec.*"
+
+server:
+  port: 18080
+# External Services
+services:
+  api-key-service:
+    url: ${API_KEY_SERVICE_URL:http://localhost:18081}
+
+# Management & Monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS:health,info,metrics}
+      base-path: ${MANAGEMENT_BASE_PATH:/actuator}
+  endpoint:
+    health:
+      show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:when_authorized}
+      show-components: ${MANAGEMENT_HEALTH_SHOW_COMPONENTS:when_authorized}
+    gateway:
+      enabled: ${MANAGEMENT_GATEWAY_ENABLED:true}
+  metrics:
+    tags:
+      application: ${spring.application.name}
+# 🎯 보안 계층 설정
+security:
+  layers:
+    pre-validation:
+      input-validation:
+        sql-injection-protection: ${SQL_INJECTION_PROTECTION:true}
+        xss-protection: ${XSS_PROTECTION:true}
+        path-traversal-protection: ${PATH_TRAVERSAL_PROTECTION:true}
+        max-request-size: ${MAX_REQUEST_SIZE:10485760}
+        allowed-content-types: ${ALLOWED_CONTENT_TYPES:application/json,application/x-www-form-urlencoded}
+
+    authentication:
+      api-key:
+        enabled: ${API_KEY_ENABLED:true}
+        require-signature: ${API_KEY_REQUIRE_SIGNATURE:true}
+        timestamp-tolerance-seconds: ${API_KEY_TIMESTAMP_TOLERANCE:300}
+        hash-algorithm: ${API_KEY_HASH_ALGORITHM:HMAC-SHA256}
+        # Idempotency Key 설정
+        idempotency:
+          enabled: ${IDEMPOTENCY_ENABLED:true}
+          ttl-hours: ${IDEMPOTENCY_TTL_HOURS:24}
+        # 통합된 ApiKeyProperties 설정
+        validation-strategy: ${API_KEY_VALIDATION_STRATEGY:CACHE_FIRST}
+        cache:
+          enabled: ${API_KEY_CACHE_ENABLED:true}
+          l1-ttl-minutes: ${API_KEY_L1_TTL_MINUTES:1}
+          l2-ttl-minutes: ${API_KEY_L2_TTL_MINUTES:5}
+          l1-max-size: ${API_KEY_L1_MAX_SIZE:10000}
+          warmup-on-startup: ${API_KEY_WARMUP_ON_STARTUP:true}
+        security:
+          require-secret: ${API_KEY_REQUIRE_SECRET:false}
+          ip-whitelist-enabled: ${API_KEY_IP_WHITELIST_ENABLED:false}
+          max-failed-attempts: ${API_KEY_MAX_FAILED_ATTEMPTS:10}
+          block-duration-minutes: ${API_KEY_BLOCK_DURATION_MINUTES:30}
+      # OAuth, MFA 기능은 향후 구현 예정
+
+    # Authorization (RBAC/ABAC) 기능은 향후 구현 예정
+
+    monitoring:
+      audit-logging:
+        enabled: ${AUDIT_LOGGING_ENABLED:true}
+        use-kafka: ${AUDIT_KAFKA_ENABLED:true}
+        kafka-topic: ${AUDIT_KAFKA_TOPIC:security-audit-logs}
+        log-failed-authentications: ${AUDIT_LOG_AUTH_FAILURES:true}
+        sensitive-fields: ${AUDIT_SENSITIVE_FIELDS:password,secret,token,apiKey}
+      # 고급 모니터링 기능은 향후 구현 예정
+
+# Logging Configuration
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.exec: ${LOG_LEVEL_EXEC:INFO}
+    org.springframework.cloud.gateway: ${LOG_LEVEL_GATEWAY:INFO}
+    org.springframework.web.reactive: ${LOG_LEVEL_REACTIVE:INFO}
+    org.springframework.data.redis: ${LOG_LEVEL_REDIS:INFO}
+    io.github.resilience4j: ${LOG_LEVEL_RESILIENCE:INFO}
+    reactor.netty: ${LOG_LEVEL_NETTY:INFO}
+    io.netty: ${LOG_LEVEL_NETTY_IO:INFO}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    path: ${LOG_PATH:./logs}
+    name: ${LOG_FILE:./logs/api-gateway.log}
+  # Request/Response 로깅 설정
+  request-response:
+    enabled: ${LOGGING_REQUEST_RESPONSE_ENABLED:true}
+    max-body-size: ${LOGGING_MAX_BODY_SIZE:10240}
+    max-header-value-length: ${LOGGING_MAX_HEADER_LENGTH:500}
+    sensitive-fields: password,passwd,pwd,secret,token,authorization,api-key,api_key,access-token,access_token,refresh-token,ssn,social,credit-card,creditcard,cvv,pin
+    exclude-paths: /actuator/**,/health/**,/metrics/**,/favicon.ico
+    exclude-methods:
+    channels:
+      mysql: true
+      elasticsearch: true
+      kafka: true
+      file-backup: false
+    performance:
+      async-enabled: true
+      batch-size: 100
+      batch-interval-ms: 5000
+      timeout-ms: 30000
+      retry-count: 3
+      backpressure-threshold: 1000
+    security:
+      mask-sensitive-data: true
+      mask-ip-address: false
+      mask-user-info: true
+      mask-credit-card: true
+      allowed-ip-ranges: []
+      security-scan-enabled: false

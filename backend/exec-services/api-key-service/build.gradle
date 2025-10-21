@@ -1,0 +1,32 @@
+// 플러그인은 루트 프로젝트에서 이미 적용됨 (중복 제거)
+
+dependencies {
+    // Core 모듈 의존성 (DB, Entity 포함)
+    implementation project(':module-core')
+
+    // Spring Boot Starters
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Monitoring
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // JSON Processing
+    implementation 'com.fasterxml.jackson.core:jackson-core'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    // Logging (최신 버전)
+    implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
+}
+
+jar {
+    enabled = false
+    archiveClassifier = ''
+}
+
+bootJar {
+    enabled = true
+    archiveClassifier = 'boot'
+    mainClass = 'com.exec.services.apikey.ApiKeyServiceApplication'
+}

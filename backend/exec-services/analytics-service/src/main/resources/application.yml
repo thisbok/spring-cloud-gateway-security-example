@@ -1,0 +1,89 @@
+server:
+  port: 18082
+
+spring:
+  application:
+    name: analytics-service
+  profiles:
+    active: local
+
+  # Redis Configuration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 2  # analytics 용 별도 DB
+      timeout: ${REDIS_TIMEOUT:2000ms}
+      lettuce:
+        pool:
+          max-active: ${REDIS_MAX_ACTIVE:20}
+          max-idle: ${REDIS_MAX_IDLE:10}
+          min-idle: ${REDIS_MIN_IDLE:2}
+
+  # Elasticsearch Configuration
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
+    username: ${ELASTICSEARCH_USERNAME:elastic}
+    password: ${ELASTICSEARCH_PASSWORD:}
+    connection-timeout: ${ELASTICSEARCH_CONNECTION_TIMEOUT:10s}
+    socket-timeout: ${ELASTICSEARCH_SOCKET_TIMEOUT:60s}
+
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      bootstrap-servers: ${spring.kafka.bootstrap-servers}
+      group-id: analytics-service-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 500
+      max-poll-interval-ms: 300000
+      session-timeout-ms: 30000
+      properties:
+        spring.json.trusted.packages: com.exec.common.dto
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.exec.common.dto.ApiGatewayRequestLogDto
+    producer:
+      bootstrap-servers: ${spring.kafka.bootstrap-servers}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        linger.ms: 10
+        batch.size: 16384
+
+# Kafka Topics Configuration
+kafka:
+  topics:
+    api-gateway-logs: api-gateway-request-logs
+    api-gateway-logs-dlt: api-gateway-request-logs-dlt
+  consumer:
+    group-id: analytics-service-group
+    max-poll-records: 500
+    max-poll-interval-ms: 300000
+    session-timeout-ms: 30000
+    enable-auto-commit: false
+    auto-offset-reset: earliest
+    retry:
+      max-attempts: 3
+      backoff-interval: 1000
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# Logging Configuration
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{requestId}] %logger{36} - %msg%n"

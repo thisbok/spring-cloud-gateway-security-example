@@ -1,0 +1,42 @@
+dependencies {
+    // Internal Dependencies
+    implementation project(':module-common')
+
+    // Spring Boot Reactive Starters
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Circuit Breaker & Resilience (최신 버전)
+    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
+    implementation 'io.github.resilience4j:resilience4j-reactor:2.3.0'
+
+
+    // Monitoring
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // Kafka for Event Streaming
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    // Load Balancing
+    implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'
+
+    // Validation
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // JWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+
+    // Apache Commons for Crypto (최신 버전)
+    implementation 'commons-codec:commons-codec:1.17.1'
+
+    // Caffeine Cache for Local Caching (최신 버전)
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+
+
+    // Password Encoding
+    implementation 'org.springframework.security:spring-security-crypto'
+}

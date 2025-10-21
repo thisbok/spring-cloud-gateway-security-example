@@ -1,0 +1,15 @@
+rootProject.name = 'backend'
+
+// Core modules
+include 'module-core'
+include 'module-common'
+
+// Gateway applications  
+include 'api-gateway'
+
+// Services container project
+include 'exec-services'
+
+// Service applications
+include 'exec-services:api-key-service'
+include 'exec-services:analytics-service'
